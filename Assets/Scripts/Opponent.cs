@@ -10,6 +10,9 @@ public class Opponent : MonoBehaviour
     public Text xText;
     public Text yText;
     public Text zText;
+    public Text playerFoundText;
+    public InputField interpSpeedText;
+    float interpSpeed = 1;
     SocketIOComponent socket;
     public bool compressing;
 
@@ -35,14 +38,22 @@ public class Opponent : MonoBehaviour
         yText.text = "Opponent Y: " + transform.position.y;
         zText.text = "Opponent Z: " + transform.position.z;
 
+        //use linear interpolation to reduce jitter
         if (compressing && playerFound){
-            transform.position = Vector3.Lerp(transform.position, mostRecentPosition, 0.5f);
+            transform.position = Vector3.Lerp(transform.position, mostRecentPosition, interpSpeed);
         }      
+
+        if (interpSpeedText.text != null && interpSpeedText.text != ""){
+            if (float.Parse(interpSpeedText.text) >= 0 && float.Parse(interpSpeedText.text) <= 1){
+                interpSpeed = float.Parse(interpSpeedText.text);
+            }
+        }
     }
 
     //getting data from the server
     public void getData(SocketIOEvent e){
         playerFound = true;
+        playerFoundText.text = "Opponent has been found";
         if (!compressing){
             float newx = BitConverter.ToSingle(StringtoByteArray(e.data.list[0].str), 0);
             float newy = BitConverter.ToSingle(StringtoByteArray(e.data.list[1].str), 0);
@@ -51,6 +62,7 @@ public class Opponent : MonoBehaviour
             transform.position = new Vector3(newx,newy,newz);
         }
         else{
+            //decode short, then turn into float so it can be used as vector
             ushort newx = BitConverter.ToUInt16(StringtoByteArray(e.data.list[0].str), 0);
             ushort newy = BitConverter.ToUInt16(StringtoByteArray(e.data.list[1].str), 0);
             ushort newz = BitConverter.ToUInt16(StringtoByteArray(e.data.list[2].str), 0);
@@ -62,8 +74,6 @@ public class Opponent : MonoBehaviour
             //print((float)fnewx);
             mostRecentPosition = new Vector3((float)fnewx,(float)fnewy,(float)fnewz);
         }
-        
-
     }
 
     public static byte[] StringtoByteArray(string hex){
@@ -74,6 +84,8 @@ public class Opponent : MonoBehaviour
         }
         return bytes;
     }
+
+    
 
 }
 

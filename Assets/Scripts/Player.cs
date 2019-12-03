@@ -16,11 +16,12 @@ public class Player : MonoBehaviour
     public Text xText;
     public Text yText;
     public Text zText;
+    public InputField frameFreqText; 
     public bool compressing;
     SocketIOComponent socket;
     int frameCounter = 0;
-    int frameFreq = 3;
-    public InputField frameFreqText; 
+    int frameFreq = 1;
+
 
     void Start()
     {
@@ -30,29 +31,30 @@ public class Player : MonoBehaviour
         GameObject go = GameObject.Find("SocketIO");
         socket = go.GetComponent<SocketIOComponent>();
 
-        double xpos = transform.position.x;
-        xpos = xpos * Math.Pow(2,11);
-        print(xpos);
+        //for testing quantization
+        // double xpos = transform.position.x;
+        // xpos = xpos * Math.Pow(2,11);
+        // print(xpos);
 
-        ushort shortxpos = Convert.ToUInt16(xpos);
-        print(shortxpos);
+        // ushort shortxpos = Convert.ToUInt16(xpos);
+        // print(shortxpos);
 
-        string xbin = BitConverter.ToString(BitConverter.GetBytes(shortxpos), 0).Replace("-","");
-        print(xbin);
+        // string xbin = BitConverter.ToString(BitConverter.GetBytes(shortxpos), 0).Replace("-","");
+        // print(xbin);
 
-        int NumberChars = xbin.Length;
-        byte[] bytes = new byte[NumberChars / 2];
-        for (int i = 0; i < NumberChars; i += 2){
-            bytes[i / 2] = Convert.ToByte(xbin.Substring(i, 2), 16);
-        }
+        // int NumberChars = xbin.Length;
+        // byte[] bytes = new byte[NumberChars / 2];
+        // for (int i = 0; i < NumberChars; i += 2){
+        //     bytes[i / 2] = Convert.ToByte(xbin.Substring(i, 2), 16);
+        // }
 
-        ushort newx = BitConverter.ToUInt16(bytes, 0);
+        // ushort newx = BitConverter.ToUInt16(bytes, 0);
 
-        print (newx);
+        // print (newx);
 
-        double fnewx = newx/ (Math.Pow(2,11));
+        // double fnewx = newx/ (Math.Pow(2,11));
 
-        print((float)fnewx);
+        // print((float)fnewx);
 
     }
 
@@ -72,6 +74,7 @@ public class Player : MonoBehaviour
         if (Input.GetKey(KeyCode.D)){
             transform.Translate(Vector3.right * Time.deltaTime * speed);
         }
+        //jumping
         if (Input.GetKeyDown(KeyCode.Space)){
             if (Physics.Raycast(transform.position,Vector3.down, 0.6f)){
                 GetComponent<Rigidbody>().AddForce(Vector3.up*4f,ForceMode.Impulse);
@@ -110,41 +113,39 @@ public class Player : MonoBehaviour
 
         //Sending player's position to server
         JSONObject playerData = new JSONObject(JSONObject.Type.OBJECT);
-        if (!compressing){
-            string xbinary = BitConverter.ToString(BitConverter.GetBytes(transform.position.x), 0).Replace("-","");
-            string ybinary = BitConverter.ToString(BitConverter.GetBytes(transform.position.y), 0).Replace("-","");
-            string zbinary = BitConverter.ToString(BitConverter.GetBytes(transform.position.z), 0).Replace("-","");
-            playerData.AddField("x", xbinary);
-            playerData.AddField("y", ybinary);
-            playerData.AddField("z", zbinary);
-            //print(xbinary);
-            socket.Emit("update", playerData);
-        }
-        else{
-            frameCounter++;
+        frameCounter++;
             if (frameCounter >= frameFreq){
                 frameCounter = 0;
-                double xpos = transform.position.x;
-                xpos = xpos * Math.Pow(2,11);
-                double ypos = transform.position.y;
-                ypos = ypos * Math.Pow(2,11);
-                double zpos = transform.position.z;
-                zpos = zpos * Math.Pow(2,11);
+                if (!compressing){
+                    string xbinary = BitConverter.ToString(BitConverter.GetBytes(transform.position.x), 0).Replace("-","");
+                    string ybinary = BitConverter.ToString(BitConverter.GetBytes(transform.position.y), 0).Replace("-","");
+                    string zbinary = BitConverter.ToString(BitConverter.GetBytes(transform.position.z), 0).Replace("-","");
+                    playerData.AddField("x", xbinary);
+                    playerData.AddField("y", ybinary);
+                    playerData.AddField("z", zbinary);
+                    //print(xbinary);
+                    socket.Emit("update", playerData);
+                }
+                else{
+                    //encode to a short, then send the binary as a string so it can be measured
+                    double xpos = transform.position.x;
+                    xpos = xpos * Math.Pow(2,11);
+                    double ypos = transform.position.y;
+                    ypos = ypos * Math.Pow(2,11);
+                    double zpos = transform.position.z;
+                    zpos = zpos * Math.Pow(2,11);
 
-                string xbinary = BitConverter.ToString(BitConverter.GetBytes(Convert.ToUInt16(xpos)), 0).Replace("-","");
-                string ybinary = BitConverter.ToString(BitConverter.GetBytes(Convert.ToUInt16(ypos)), 0).Replace("-","");
-                string zbinary = BitConverter.ToString(BitConverter.GetBytes(Convert.ToUInt16(zpos)), 0).Replace("-","");
-                playerData.AddField("x", xbinary);
-                playerData.AddField("y", ybinary);
-                playerData.AddField("z", zbinary);
-                //print(playerData);
-                socket.Emit("update", playerData);
+                    string xbinary = BitConverter.ToString(BitConverter.GetBytes(Convert.ToUInt16(xpos)), 0).Replace("-","");
+                    string ybinary = BitConverter.ToString(BitConverter.GetBytes(Convert.ToUInt16(ypos)), 0).Replace("-","");
+                    string zbinary = BitConverter.ToString(BitConverter.GetBytes(Convert.ToUInt16(zpos)), 0).Replace("-","");
+                    playerData.AddField("x", xbinary);
+                    playerData.AddField("y", ybinary);
+                    playerData.AddField("z", zbinary);
+                    //print(playerData);
+                    socket.Emit("update", playerData);
+                }
             }
-
-            
-        }
-        
-
-        
+  
     }
+
 }
