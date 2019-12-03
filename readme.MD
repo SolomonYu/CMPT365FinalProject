@@ -4,7 +4,7 @@ The motivation for this project is to explore how the data being sent between a 
 
 This project uses a Node.js server with Socket.IO to allow a Unity game to communicate with another instance of itself, and sending the position of 2 players back and forth.
 
-###To run this program###
+To run this program:
 This project was originally run from a Windows environment.
 First, install node.js to open the server. https://nodejs.org/en/download/
 Then, navigate to CMPT365FinalProject\nodeServer and run this command in the terminal: ‘node server.js’ and leave the terminal open. The logs will show here.
